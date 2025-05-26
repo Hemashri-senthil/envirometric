@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculate WQI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #e0f7fa, #ffffff);
+      color: #333;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .header {
+      text-align: center;
+      padding: 100px 20px;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      position: relative;
+    }
+
+    .header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+      border-radius: 0 0 20px 20px;
+    }
+
+    .header h1,
+    .header .calculate-btn {
+      position: relative;
+      z-index: 1;
+    }
+
+    .calculate-btn {
+      background-color: #4db8ff;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .calculate-btn:hover {
+      background-color: #66ccff;
+    }
+
+    .section {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px;
+    }
+
+    .section:nth-child(even) {
+      background-color: #f1f1f1;
+    }
+
+    .text-block {
+      flex: 1 1 400px;
+      max-width: 600px;
+      padding: 20px;
+    }
+
+    .text-block h2 {
+      margin-bottom: 15px;
+    }
+
+    .image-block {
+      flex: 1 1 300px;
+      max-width: 400px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .image-block img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .footer {
+      text-align: center;
+      padding: 80px 20px;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      position: relative;
+    }
+
+    .footer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+    }
+
+    .footer h2,
+    .footer p,
+    .footer .calculate-btn {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Logout link style */
+    .logout-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: white;
+      text-decoration: underline;
+      font-size: 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logout-link:hover {
+      color: #ffcccb;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Section -->
+  <div class="header">
+    <h1>Water Quality Index (WQI) Overview</h1>
+    <a href="#calculateSection"><button class="calculate-btn">Calculate WQI</button></a>
+  </div>
+
+  <!-- What is WQI Section -->
+  <div class="section">
+    <div class="text-block">
+      <h2>What is WQI?</h2>
+      <p>
+        The Water Quality Index (WQI) is a numerical representation of water quality. It helps people understand how clean or polluted the water is based on several parameters like pH, Dissolved Oxygen, Nitrate, BOD, and more. The index simplifies complex water data into a single value that represents water condition: Excellent, Good, Medium, Bad, or Very Bad.
+      </p>
+    </div>
+    <div class="image-block">
+      <img src="wqi1.jpg" alt="WQI Gauge Image" />
+    </div>
+  </div>
+
+  <!-- Sources of Water Pollution Section -->
+  <div class="section">
+    <div class="image-block">
+      <img src="wqi3.png" alt="Sources of Pollution" />
+    </div>
+    <div class="text-block">
+      <h2>Sources of Water Pollution</h2>
+      <p>
+        Major sources of water pollution include industrial discharge, agricultural runoff, domestic waste, oil spills, and untreated sewage. These pollutants enter lakes, rivers, and groundwater, degrading water quality and affecting aquatic life and human health.
+      </p>
+    </div>
+  </div>
+
+  <!-- Common Water Pollutants Section -->
+  <div class="section">
+    <div class="text-block">
+      <h2>Common Water Pollutants</h2>
+      <p>
+        Some common pollutants include:
+        <ul>
+          <li>pH imbalance</li>
+          <li>Dissolved Oxygen (DO)</li>
+          <li>Biological Oxygen Demand (BOD)</li>
+          <li>Nitrate and Nitrite</li>
+          <li>Heavy Metals like Lead and Mercury</li>
+        </ul>
+        These pollutants negatively impact aquatic ecosystems and pose risks to human health.
+      </p>
+    </div>
+    <div class="image-block">
+      <img src="wqi4.png" alt="Water Pollutants" />
+    </div>
+  </div>
+
+  <!-- Calculator Section -->
+  <div id="calculateSection" class="footer">
+    <h2>Ready to Calculate WQI?</h2>
+    <p>Click below to proceed to the calculator</p>
+    <a href="wqicalculator.html"><button class="calculate-btn">Go to WQI Calculator</button></a><br>
+    <a href="login.html" class="logout-link">Logout</a>
+  </div>
+
+</body>
+</html>

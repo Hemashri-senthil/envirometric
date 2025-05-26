@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculate AQI - Comparison</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+
+
+    body {
+  font-family: Arial, sans-serif;
+  padding: 40px;
+  background: #f7f9fa url('img.jpeg') no-repeat center center fixed;
+  background-size: cover;
+}
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #007bff;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #28a745;
+      color: white;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .result, .comparison-container {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculate Your AQI</h1>
+
+    <label for="yourAqiInput">Enter Your AQI:</label>
+    <input type="number" id="yourAqiInput" placeholder="e.g. 75" min="0" />
+    <button onclick="compareAQI()">Compare with Current AQI</button>
+
+    <div class="result" id="result"></div>
+
+    <div class="comparison-container">
+      <canvas id="comparisonChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function compareAQI() {
+      const input = document.getElementById('yourAqiInput').value;
+      const userAQI = parseFloat(input);
+      const currentAQI = 92; // Mock real-time AQI (replace with API call if needed)
+
+      if (isNaN(userAQI) || userAQI < 0) {
+        alert('Please enter a valid AQI.');
+        return;
+      }
+
+      // Show interpretation
+      const resultEl = document.getElementById('result');
+      let message = '';
+      if (userAQI <= 50) message = 'Excellent Air Quality';
+      else if (userAQI <= 100) message = 'Moderate Air Quality';
+      else if (userAQI <= 150) message = 'Unhealthy for Sensitive Groups';
+      else if (userAQI <= 200) message = 'Unhealthy';
+      else if (userAQI <= 300) message = 'Very Unhealthy';
+      else message = 'Hazardous';
+
+      resultEl.innerHTML = `<h3>Your AQI: ${userAQI}</h3><p>${message}</p>`;
+
+      // Create chart
+      const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+      // Destroy old chart instance if exists
+      if (window.aqiChart) {
+        window.aqiChart.destroy();
+      }
+
+      window.aqiChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Current AQI', 'Your AQI'],
+          datasets: [{
+            label: 'AQI Level',
+            data: [currentAQI, userAQI],
+            backgroundColor: ['#007bff', '#28a745']
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 300
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

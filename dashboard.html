@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+    }
+
+    .dashboard-container {
+      position: relative;
+      z-index: 1;
+      width: 400px;
+      padding: 30px 40px;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      color: #ffffff;
+      text-align: center;
+    }
+
+    .dashboard-container h1 {
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+
+    .dashboard-container button {
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 25px;
+      margin: 10px;
+      cursor: pointer;
+      background-color: #4db8ff;
+      color: white;
+      border: none;
+      transition: 0.3s;
+    }
+
+    .dashboard-container button:hover {
+      background-color: #66ccff;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: nowrap;
+    }
+
+    .top-buttons button {
+      white-space: nowrap;
+      padding: 12px 25px;
+      flex-shrink: 0;
+    }
+
+    .bottom-button {
+      display: block;
+      margin: 20px auto 0 auto;
+      transform: translateX(40px);
+      white-space: nowrap;
+      padding: 12px 30px;
+      max-width: fit-content;
+    }
+
+    .logout-link {
+      margin-top: 25px;
+      font-size: 0.95rem;
+    }
+
+    .logout-link a {
+      color: #b3d9ff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .logout-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+<body>
+
+<div class="dashboard-container">
+  <h1>Welcome to the Dashboard</h1>
+
+  <div class="top-buttons">
+    <button onclick="location.href='calculate-aqi.html'">Calculate AQI</button>
+    <button onclick="location.href='calculate-wqi.html'">Calculate WQI</button>
+  </div>
+
+  <button class="bottom-button" onclick="location.href='calculate-cpl.html'">City's pollution level</button>
+
+  <div class="logout-link">
+    <a onclick="logout()">Logout</a>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKPFn28_lBMVpbtVUaY2aR-ODDlvn3Y0",
+    authDomain: "envirometric-75c46.firebaseapp.com",
+    projectId: "envirometric-75c46",
+    storageBucket: "envirometric-75c46.appspot.com",
+    messagingSenderId: "12103395246",
+    appId: "1:12103395246:web:8bed51fdbc363af25b0a3f",
+    measurementId: "G-SLMC2655JC"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  function logout() {
+    firebase.auth().signOut().then(() => {
+      alert("Logged out successfully!");
+      window.location.href = "login.html";
+    }).catch((error) => {
+      console.error("Logout failed:", error);
+      alert("Logout failed: " + error.message);
+    });
+  }
+</script>
+
+</body>
+</html>

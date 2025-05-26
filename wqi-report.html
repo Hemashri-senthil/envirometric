@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detailed WQI Report</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: Arial, sans-serif;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+    }
+    .report-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: left;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    h2 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+    .wqi-value {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #007bff;
+      text-align: center;
+    }
+    .status {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .param-list {
+      list-style: none;
+      padding: 0;
+    }
+    .param-list li {
+      margin-bottom: 8px;
+    }
+    .download-btn {
+      display: block;
+      width: 100%;
+      margin: 30px auto 0;
+      padding: 15px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+      text-align: center;
+      user-select: none;
+    }
+    .download-btn:hover {
+      background-color: #0056b3;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 28px;
+      background-color: #6c757d;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .back-btn:hover {
+      background-color: #5a6268;
+    }
+    .note {
+      font-size: 14px;
+      color: #555;
+      margin-top: 30px;
+      text-align: center;
+    }
+  </style>
+
+  <!-- ✅ Include jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="report-container" id="report">
+    <h1>Water Quality Index (WQI) Report</h1>
+
+    <div class="wqi-value" id="wqiValue">--</div>
+    <div class="status" id="wqiStatus">--</div>
+
+    <h2>Input Parameters</h2>
+    <ul class="param-list" id="paramList"></ul>
+
+    <h2>Parameter Details and Explanation</h2>
+    <ul>
+      <li><strong>pH Level:</strong> Measures how acidic/basic the water is. Ideal range is 6.5 to 8.5. Values outside this range may harm aquatic life.</li>
+      <li><strong>Dissolved Oxygen (DO):</strong> Oxygen available in water. Higher values mean better water quality, supporting aquatic organisms.</li>
+      <li><strong>Biological Oxygen Demand (BOD):</strong> Amount of oxygen needed by microorganisms to decompose organic matter. Lower BOD indicates less pollution.</li>
+      <li><strong>Nitrate:</strong> Nutrient that in excess causes eutrophication leading to algae blooms and oxygen depletion.</li>
+      <li><strong>Temperature:</strong> Affects oxygen levels and aquatic life metabolism. Higher temps generally reduce oxygen availability.</li>
+    </ul>
+
+    <h2>Overall Water Quality Status</h2>
+    <p id="statusDesc"></p>
+
+    <button class="download-btn" onclick="downloadReport()">Download Report</button>
+    <a href="wqicalculator.html" class="back-btn">Back to Calculator</a>
+    <div class="note">
+      Note: This report is generated based on the entered water quality parameters using a simplified WQI model.
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const wqi = params.get("wqi") || "N/A";
+    const status = params.get("status") || "Unknown";
+
+    document.getElementById('wqiValue').textContent = wqi;
+    document.getElementById('wqiStatus').textContent = status;
+
+    const inputs = {
+      "pH Level": params.get("ph") || "N/A",
+      "Dissolved Oxygen (mg/L)": params.get("do") || "N/A",
+      "Biological Oxygen Demand (mg/L)": params.get("bod") || "N/A",
+      "Nitrate (mg/L)": params.get("nitrate") || "N/A",
+      "Temperature (°C)": params.get("temperature") || "N/A"
+    };
+
+    const paramListEl = document.getElementById("paramList");
+    for (const [key, value] of Object.entries(inputs)) {
+      const li = document.createElement("li");
+      li.textContent = `${key}: ${value}`;
+      paramListEl.appendChild(li);
+    }
+
+    let statusDesc = "";
+    switch (status.toLowerCase()) {
+      case "excellent":
+        statusDesc = "Water quality is excellent. Suitable for all aquatic life and safe for recreational activities.";
+        break;
+      case "good":
+        statusDesc = "Water quality is good. Minor issues may exist but overall safe for most uses.";
+        break;
+      case "medium":
+        statusDesc = "Water quality is moderate. Some pollution may affect sensitive aquatic organisms.";
+        break;
+      case "bad":
+        statusDesc = "Water quality is poor. Pollution levels are high and aquatic life may be stressed.";
+        break;
+      case "very bad":
+        statusDesc = "Water quality is very poor. Water is heavily polluted and unsuitable for most aquatic life and human activities.";
+        break;
+      default:
+        statusDesc = "Water quality status is unknown.";
+    }
+    document.getElementById("statusDesc").textContent = statusDesc;
+
+    async function downloadReport() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      let y = 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Water Quality Index (WQI) Report", 105, y, { align: "center" });
+
+      y += 15;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(`WQI Value: ${wqi}`, 20, y += 10);
+      doc.text(`Status: ${status}`, 20, y += 10);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Input Parameters:", 20, y += 15);
+
+      doc.setFont("helvetica", "normal");
+      for (const [key, value] of Object.entries(inputs)) {
+        doc.text(`- ${key}: ${value}`, 25, y += 8);
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Parameter Details and Explanation:", 20, y += 15);
+      doc.setFont("helvetica", "normal");
+
+      const explanations = [
+        "pH Level: Measures how acidic/basic the water is. Ideal range is 6.5 to 8.5.",
+        "Dissolved Oxygen (DO): Higher values mean better water quality.",
+        "Biological Oxygen Demand (BOD): Lower BOD indicates less pollution.",
+        "Nitrate: Excess causes algae blooms and oxygen depletion.",
+        "Temperature: Affects oxygen levels and aquatic life metabolism."
+      ];
+
+      explanations.forEach(text => {
+        doc.text(`- ${text}`, 25, y += 8);
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Overall Water Quality Status:", 20, y += 15);
+      doc.setFont("helvetica", "normal");
+      const splitStatus = doc.splitTextToSize(statusDesc, 170);
+      doc.text(splitStatus, 25, y += 10);
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      doc.text("Note: This report is generated using a simplified WQI model.", 20, 285);
+
+      const fileName = `WQI_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+    }
+  </script>
+</body>
+</html>

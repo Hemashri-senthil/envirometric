@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AQI Report</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #222;
+      padding: 20px;
+    }
+
+    .report-card {
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 12px;
+      padding: 40px 30px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      backdrop-filter: saturate(180%) blur(10px);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: #111;
+    }
+
+    .report-item {
+      font-size: 18px;
+      margin-bottom: 18px;
+      line-height: 1.4;
+      font-weight: 500;
+      color: #333;
+    }
+
+    #pollutants-list {
+      padding-left: 20px;
+      list-style-type: disc;
+      color: #555;
+      font-weight: 400;
+    }
+
+    .download-btn {
+      display: block;
+      margin: 30px auto 0;
+      padding: 14px 30px;
+      font-size: 18px;
+      font-weight: 600;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0,123,255,0.4);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      width: 100%;
+      max-width: 260px;
+      text-align: center;
+    }
+
+    .download-btn:hover {
+      background-color: #0056b3;
+      box-shadow: 0 8px 16px rgba(0,86,179,0.6);
+    }
+
+    @media (max-width: 640px) {
+      .report-card {
+        padding: 30px 20px;
+      }
+
+      .report-item {
+        font-size: 16px;
+        margin-bottom: 14px;
+      }
+
+      .download-btn {
+        font-size: 16px;
+        max-width: 100%;
+      }
+    }
+  </style>
+
+  <!-- Include jsPDF from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="report-card">
+    <h1>Air Quality Report</h1>
+    <div class="report-item"><strong>City:</strong> <span id="city"></span></div>
+    <div class="report-item"><strong>Date:</strong> <span id="date"></span></div>
+    <div class="report-item"><strong>Overall AQI:</strong> <span id="aqi"></span></div>
+    <div class="report-item"><strong>Dominant Pollutant:</strong> <span id="dominant"></span></div>
+    <div class="report-item"><strong>Pollutants:</strong>
+      <ul id="pollutants-list"></ul>
+    </div>
+    <button class="download-btn" onclick="downloadReport()">Download Report</button>
+  </div>
+
+  <script>
+    // Retrieve data from sessionStorage
+    const aqiData = JSON.parse(sessionStorage.getItem('aqiData'));
+
+    if (aqiData) {
+      document.getElementById('city').textContent = aqiData.city || 'N/A';
+      document.getElementById('date').textContent = aqiData.date || 'N/A';
+      document.getElementById('aqi').textContent = Math.round(aqiData.aqi) || 'N/A';
+      document.getElementById('dominant').textContent = aqiData.dominantpol || 'N/A';
+
+      const pollutantsList = document.getElementById('pollutants-list');
+      pollutantsList.innerHTML = '';
+
+      for (const [key, value] of Object.entries(aqiData.pollutants || {})) {
+        const li = document.createElement('li');
+        li.textContent = `${key.toUpperCase()}: ${value} µg/m³`;
+        pollutantsList.appendChild(li);
+      }
+    } else {
+      alert("No AQI data found. Please select a location first.");
+    }
+
+    async function downloadReport() {
+      if (!aqiData) return alert("No data to download.");
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Air Quality Report", 105, y, { align: "center" });
+      y += 10;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(`City: ${aqiData.city || 'N/A'}`, 20, y += 10);
+      doc.text(`Date: ${aqiData.date || 'N/A'}`, 20, y += 10);
+      doc.text(`Overall AQI: ${Math.round(aqiData.aqi) || 'N/A'}`, 20, y += 10);
+      doc.text(`Dominant Pollutant: ${aqiData.dominantpol || 'N/A'}`, 20, y += 10);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Pollutant Levels:", 20, y += 12);
+
+      doc.setFont("helvetica", "normal");
+      for (const [key, value] of Object.entries(aqiData.pollutants || {})) {
+        doc.text(`- ${key.toUpperCase()}: ${value} µg/m³`, 25, y += 8);
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      }
+
+      const fileName = `${aqiData.city ? aqiData.city.replace(/[, ]+/g, '_') : 'AQI'}_Report.pdf`;
+      doc.save(fileName);
+    }
+  </script>
+</body>
+</html>

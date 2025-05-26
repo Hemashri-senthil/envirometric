@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Select Location - AQI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0e0e0e;
+      color: white;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      z-index: -1;
+    }
+    .location-container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 30px 30px 60px 30px;
+      min-height: 550px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      width: 350px;
+      position: relative;
+    }
+    .location-container h1 {
+      font-size: 1.8rem;
+      margin-bottom: -50px;
+      color: #ffffff;
+    }
+    .search-wrapper {
+      margin: 80px 40px 30px 10px;
+      position: relative;
+    }
+    #cityInput {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      width: 100%;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    #cityInput::placeholder {
+      color: #ccc;
+    }
+    .search-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      fill: #aaa;
+      transition: fill 0.3s;
+    }
+    .search-icon:hover {
+      fill: #4db8ff;
+    }
+    button {
+      padding: 10px;
+      margin: 30px 40px 10px 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      width: calc(100% - 50px);
+      cursor: pointer;
+      border: none;
+      color: white;
+      background: linear-gradient(135deg, #4db8ff, #007acc);
+      transition: background 0.3s;
+      display: block;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #66ccff, #0088cc);
+    }
+    .gauge-container {
+      position: relative;
+      width: 300px;
+      height: 160px;
+      margin: 0 auto -10px auto;
+    }
+    .speedometer {
+      width: 100%;
+      display: block;
+    }
+    .needle {
+      position: absolute;
+      bottom: 50px;
+      left: 49.5%;
+      transform: translateX(-50%) rotate(0deg);
+      transform-origin: bottom center;
+      width: 5px;
+      height: 60px;
+      background: black;
+      border-radius: 2px;
+      transition: transform 0.8s ease-in-out;
+      z-index: 10;
+    }
+    .needle-base {
+      position: absolute;
+      bottom: 44px;
+      left: 49.5%;
+      width: 14px;
+      height: 14px;
+      background: #222;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      z-index: 11;
+    }
+    #result {
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      min-height: 28px;
+    }
+    .good { color: #00e400; }
+    .moderate { color: #c4c400; }
+    .usg { color: #ff7e00; }
+    .unhealthy { color: #ff0000; }
+    .very-unhealthy { color: #8f3f97; }
+    .hazardous { color: #7e0023; }
+    #generate-report-btn {
+      background-color: #4CAF50;
+      margin-top: 10px;
+    }
+    #generate-report-btn:hover {
+      background-color: #45a049;
+    }
+    button.logout-btn {
+      background: #ff4c4c !important;
+      margin-top: 10px !important;
+    }
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px 0 10px 0;
+      padding: 0 10px;
+    }
+    .legend-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="location-container">
+    <h1>Select Your Location</h1>
+
+    <div class="search-wrapper">
+      <input type="text" id="cityInput" placeholder="Enter your city" />
+      <svg class="search-icon" id="searchIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M10 2a8 8 0 105.292 14.292l4.853 4.853 1.414-1.414-4.853-4.853A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z"/>
+      </svg>
+    </div>
+
+    <div class="gauge-container">
+      <img src="aqispeedometer.png" class="speedometer" alt="AQI Speedometer" />
+      <div id="needle" class="needle" aria-hidden="true"></div>
+      <div class="needle-base"></div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-dot good"></span>
+      <span class="legend-dot moderate"></span>
+      <span class="legend-dot usg"></span>
+      <span class="legend-dot unhealthy"></span>
+      <span class="legend-dot very-unhealthy"></span>
+      <span class="legend-dot hazardous"></span>
+    </div>
+
+    <button id="calculate-btn">Calculate AQI</button>
+    <button id="generate-report-btn">Generate Report</button>
+    
+
+    <div id="result">AQI will appear here...</div>
+  </div>
+
+  <script>
+    const apiKey = "68d168eb027adfcb9a659ad38aeea739";
+    const needle = document.getElementById("needle");
+    const resultDiv = document.getElementById("result");
+    const cityInput = document.getElementById("cityInput");
+
+    function getAQIDescription(aqi) {
+      if (aqi <= 50) return { text: "Good", className: "good" };
+      if (aqi <= 100) return { text: "Moderate", className: "moderate" };
+      if (aqi <= 150) return { text: "Unhealthy for Sensitive Groups", className: "usg" };
+      if (aqi <= 200) return { text: "Unhealthy", className: "unhealthy" };
+      if (aqi <= 300) return { text: "Very Unhealthy", className: "very-unhealthy" };
+      return { text: "Hazardous", className: "hazardous" };
+    }
+
+    function rotateNeedle(aqi) {
+      let angle;
+      if (aqi <= 50) angle = -90 + (aqi / 50) * 30;
+      else if (aqi <= 100) angle = -60 + ((aqi - 50) / 50) * 30;
+      else if (aqi <= 150) angle = -30 + ((aqi - 100) / 50) * 30;
+      else if (aqi <= 200) angle = 0 + ((aqi - 150) / 50) * 30;
+      else if (aqi <= 300) angle = 30 + ((aqi - 200) / 100) * 30;
+      else angle = 60 + ((aqi - 300) / 200) * 30;
+
+      needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+    }
+
+    async function getAQIAndUpdate() {
+      const city = cityInput.value.trim();
+      if (!city) {
+        alert("Please enter a city name.");
+        return;
+      }
+
+      try {
+        // Get geocode for city
+        const geoRes = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${apiKey}`
+        );
+        const geoData = await geoRes.json();
+        if (!geoData || geoData.length === 0) throw new Error("City not found");
+
+        const { lat, lon, name, country } = geoData[0];
+
+        // Get air pollution data
+        const aqiRes = await fetch(
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`
+        );
+        const aqiData = await aqiRes.json();
+
+        // OpenWeatherMap AQI levels are 1-5, scale it to 0-500 approx
+        const aqiLevel = aqiData.list[0].main.aqi;  // 1 to 5
+        const scaledAQI = aqiLevel * 50 - 25;       // approx scale for visualization
+
+        rotateNeedle(scaledAQI);
+        const desc = getAQIDescription(scaledAQI);
+        resultDiv.innerHTML = `AQI in <strong>${name}, ${country}</strong>: <span class="${desc.className}">${scaledAQI} (${desc.text})</span>`;
+
+        // Extract pollutants from API response
+        const components = aqiData.list[0].components;  // { co, no, no2, o3, so2, pm2_5, pm10, nh3 }
+
+        // Find dominant pollutant (highest concentration)
+        const dominantPol = Object.entries(components).reduce((max, entry) => {
+          return entry[1] > max[1] ? entry : max;
+        })[0];
+
+        // Save all relevant data in sessionStorage under 'aqiData'
+        const saveData = {
+          city: `${name}, ${country}`,
+          date: new Date().toLocaleString(),
+          aqi: scaledAQI,
+          dominantpol: dominantPol,
+          pollutants: components
+        };
+
+        sessionStorage.setItem("aqiData", JSON.stringify(saveData));
+      } catch (error) {
+        alert("Error fetching AQI data. Please try again.");
+        resultDiv.textContent = "Error loading data.";
+        rotateNeedle(0);
+      }
+    }
+
+    // Button event listeners
+    document.getElementById("calculate-btn").addEventListener("click", getAQIAndUpdate);
+
+    document.getElementById("generate-report-btn").addEventListener("click", () => {
+      const data = sessionStorage.getItem("aqiData");
+      if (data) {
+        window.location.href = "report.html";
+      } else {
+        alert("Please calculate AQI before generating the report.");
+      }
+    });
+
+    function logout() {
+      sessionStorage.clear();
+      alert("You have been logged out.");
+      location.reload();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Satellite View with Labels</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Leaflet GeoSearch CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.1.0/dist/geosearch.css" />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 0;
+    }
+
+    #search-container {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: white;
+      padding: 5px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 90vw;
+      box-sizing: border-box;
+    }
+
+    #search-input {
+      width: 200px;
+      padding: 5px 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    #search-btn {
+      cursor: pointer;
+      background: #007bff;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 3px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #search-btn:hover {
+      background: #0056b3;
+    }
+
+    /* Title overlay */
+    #title {
+      position: absolute;
+      top: 10px;
+      left: 60px; /* Moves it slightly right of zoom buttons */
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 20px;
+      font-weight: bold;
+      z-index: 1000;
+    }
+
+    /* Hide Leaflet attribution */
+    .leaflet-control-attribution {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Title -->
+  <div id="title">Envirometric</div>
+
+  <!-- Search input + button container -->
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Search location" />
+    <button id="search-btn" title="Search location">&#128269;</button>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet GeoSearch JS -->
+  <script src="https://unpkg.com/leaflet-geosearch@3.1.0/dist/bundle.min.js"></script>
+
+  <script>
+    var apiKey = '68d168eb027adfcb9a659ad38aeea739';
+
+    var map = L.map('map', {
+      center: [20.5937, 78.9629],
+      zoom: 5,
+      maxBounds: [[-85, -180], [85, 180]],
+      minZoom: 2,
+      maxZoom: 18
+    });
+
+    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '© Esri, Maxar, Earthstar Geographics'
+    });
+    var labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '© Esri'
+    });
+    var street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    satellite.addTo(map);
+    labels.addTo(map);
+
+    L.control.layers({
+      "Street View": street,
+      "Satellite View": satellite
+    }, {
+      "Place Labels": labels
+    }).addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 100);
+
+    const pm25Breakpoints = [
+      { IHigh: 50, ILow: 0, CpHigh: 30, CpLow: 0 },
+      { IHigh: 100, ILow: 51, CpHigh: 60, CpLow: 31 },
+      { IHigh: 200, ILow: 101, CpHigh: 90, CpLow: 61 },
+      { IHigh: 300, ILow: 201, CpHigh: 120, CpLow: 91 },
+      { IHigh: 400, ILow: 301, CpHigh: 250, CpLow: 121 },
+      { IHigh: 500, ILow: 401, CpHigh: 350, CpLow: 251 }
+    ];
+
+    const pm10Breakpoints = [
+      { IHigh: 50, ILow: 0, CpHigh: 50, CpLow: 0 },
+      { IHigh: 100, ILow: 51, CpHigh: 100, CpLow: 51 },
+      { IHigh: 200, ILow: 101, CpHigh: 250, CpLow: 101 },
+      { IHigh: 300, ILow: 201, CpHigh: 350, CpLow: 251 },
+      { IHigh: 400, ILow: 301, CpHigh: 430, CpLow: 351 },
+      { IHigh: 500, ILow: 401, CpHigh: 600, CpLow: 431 }
+    ];
+
+    function calcAQI(Cp, breakpoints) {
+      for (let i = 0; i < breakpoints.length; i++) {
+        let bp = breakpoints[i];
+        if (Cp >= bp.CpLow && Cp <= bp.CpHigh) {
+          return ((bp.IHigh - bp.ILow) / (bp.CpHigh - bp.CpLow)) * (Cp - bp.CpLow) + bp.ILow;
+        }
+      }
+      return -1;
+    }
+
+    function calculateCPCBAQI(pm25, pm10) {
+      const aqiPM25 = calcAQI(pm25, pm25Breakpoints);
+      const aqiPM10 = calcAQI(pm10, pm10Breakpoints);
+      return Math.max(aqiPM25, aqiPM10);
+    }
+
+    function getAQI(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+      console.log("Fetching AQI from:", url);
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("API response not ok");
+          return response.json();
+        })
+        .then(data => {
+          if (!data.list || data.list.length === 0) {
+            throw new Error("No AQI data available");
+          }
+
+          const components = data.list[0].components;
+          const pm25 = components.pm2_5;
+          const pm10 = components.pm10;
+          const co = components.co;
+
+          const aqi = calculateCPCBAQI(pm25, pm10);
+
+          let level;
+          if (aqi <= 50) level = "Good";
+          else if (aqi <= 100) level = "Satisfactory";
+          else if (aqi <= 200) level = "Moderately Polluted";
+          else if (aqi <= 300) level = "Poor";
+          else if (aqi <= 400) level = "Very Poor";
+          else level = "Severe";
+
+          L.popup()
+            .setLatLng([lat, lon])
+            .setContent(`
+              <strong>AQI Info</strong><br>
+              AQI: ${aqi.toFixed(0)} (${level})<br>
+              PM2.5: ${pm25} μg/m³<br>
+              PM10: ${pm10} μg/m³<br>
+              CO: ${co} μg/m³
+            `)
+            .openOn(map);
+        })
+        .catch(err => {
+          alert("AQI data couldn't be loaded.");
+          console.error("Error fetching AQI data:", err);
+        });
+    }
+
+    L.marker([13.0827, 80.2707]).addTo(map)
+      .on('click', function () {
+        getAQI(13.0827, 80.2707);
+      });
+
+    map.on('click', function (e) {
+      getAQI(e.latlng.lat, e.latlng.lng);
+    });
+
+    const provider = new window.GeoSearch.OpenStreetMapProvider();
+    let currentSearchMarker = null;
+
+    async function doSearch() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) {
+        alert('Please enter a location to search.');
+        return;
+      }
+
+      try {
+        const results = await provider.search({ query: query });
+
+        if (!results || results.length === 0) {
+          alert('Location not found.');
+          return;
+        }
+
+        const loc = results[0];
+        const lat = loc.y;
+        const lon = loc.x;
+
+        if (currentSearchMarker) {
+          map.removeLayer(currentSearchMarker);
+        }
+
+        currentSearchMarker = L.marker([lat, lon]).addTo(map);
+        map.setView([lat, lon], 12);
+        getAQI(lat, lon);
+
+      } catch (err) {
+        alert('Error searching location.');
+        console.error(err);
+      }
+    }
+
+    document.getElementById('search-btn').addEventListener('click', doSearch);
+    document.getElementById('search-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        doSearch();
+      }
+    });
+
+  </script>
+</body>
+</html>

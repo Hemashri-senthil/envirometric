@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AQI Detailed Report</title>
+<style>
+  body {
+  font-family: Arial, sans-serif;
+  padding: 30px;
+  max-width: 700px;
+  margin: auto;
+  background-image: url('img.jpeg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center;
+  color: #222;
+}
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .report-box {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.12);
+  }
+  .section {
+    margin-bottom: 20px;
+  }
+  strong {
+    display: inline-block;
+    width: 160px;
+  }
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  ul li {
+    padding: 5px 0;
+  }
+  .aqi-value {
+    font-weight: bold;
+    font-size: 24px;
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 8px;
+    color: white;
+  }
+  .good { background-color: #009966; }
+  .moderate { background-color: #ffde33; color: #000; }
+  .usg { background-color: #ff9933; }
+  .unhealthy { background-color: #cc0033; }
+  .very-unhealthy { background-color: #660099; }
+  .hazardous { background-color: #7e0023; }
+  .back-btn {
+    display: block;
+    margin: 30px auto 0;
+    padding: 12px 18px;
+    background: #007bff;
+    color: white;
+    text-align: center;
+    width: 160px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .back-btn:hover {
+    background: #0056b3;
+  }
+</style>
+</head>
+<body>
+<h1>Air Quality Index Report</h1>
+<div class="report-box" id="report"></div>
+<div id="loading" style="text-align:center; margin-top: 60px; font-size: 18px; color: #555;">Loading report...</div>
+<a href="manual-aqi.html" class="back-btn">Back to Calculator</a>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKPFn28_lBMVpbtVUaY2aR-ODDlvn3Y0",
+    authDomain: "envirometric-75c46.firebaseapp.com",
+    projectId: "envirometric-75c46",
+    storageBucket: "envirometric-75c46.appspot.com",
+    messagingSenderId: "12103395246",
+    appId: "1:12103395246:web:8bed51fdbc363af25b0a3f",
+    measurementId: "G-SLMC2655JC"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // AQI categories info
+  const aqiCategories = [
+    { max: 50, name: "Good", colorClass: "good", health: "Air quality is considered satisfactory, and air pollution poses little or no risk.", advice: "Enjoy your usual outdoor activities." },
+    { max: 100, name: "Moderate", colorClass: "moderate", health: "Air quality is acceptable; however, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.", advice: "Consider reducing prolonged or heavy exertion outdoors if you are sensitive." },
+    { max: 150, name: "Unhealthy for Sensitive Groups", colorClass: "usg", health: "Members of sensitive groups may experience health effects. The general public is less likely to be affected.", advice: "Sensitive groups should reduce prolonged or heavy exertion outdoors." },
+    { max: 200, name: "Unhealthy", colorClass: "unhealthy", health: "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.", advice: "Reduce outdoor exertion, especially if you are sensitive." },
+    { max: 300, name: "Very Unhealthy", colorClass: "very-unhealthy", health: "Health alert: everyone may experience more serious health effects.", advice: "Avoid outdoor activities; stay indoors as much as possible." },
+    { max: 500, name: "Hazardous", colorClass: "hazardous", health: "Health warnings of emergency conditions. The entire population is more likely to be affected.", advice: "Avoid all outdoor exertion; follow emergency instructions." }
+  ];
+
+  // Find category info for an AQI value
+  function getCategoryInfo(aqi) {
+    return aqiCategories.find(cat => aqi <= cat.max) || aqiCategories[aqiCategories.length - 1];
+  }
+
+  async function loadLatestReport() {
+    const reportDiv = document.getElementById("report");
+    const loadingDiv = document.getElementById("loading");
+
+    try {
+      const q = query(collection(db, "aqi_results"), orderBy("timestamp", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        loadingDiv.textContent = "No AQI data found. Please calculate AQI first.";
+        return;
+      }
+
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+
+      // Format timestamp nicely
+      const dateTime = data.timestamp.toDate().toLocaleString();
+
+      // Final AQI info
+      const finalAQI = data.final_aqi;
+      const finalCat = getCategoryInfo(finalAQI);
+
+      // Build pollutant AQI list with colors
+      let pollutantListHTML = "<ul>";
+      for (const [pollutant, aqiVal] of Object.entries(data.aqis)) {
+        if (aqiVal !== null) {
+          const cat = getCategoryInfo(aqiVal);
+          pollutantListHTML += `
+            <li>
+              <strong>${pollutant.toUpperCase()}:</strong> 
+              <span class="aqi-value ${cat.colorClass}">${aqiVal} (${cat.name})</span>
+            </li>`;
+        }
+      }
+      pollutantListHTML += "</ul>";
+
+      // Inputs with units (display raw stored values, so add units yourself)
+      let inputListHTML = "<ul>";
+      for (const [pollutant, val] of Object.entries(data.inputs)) {
+        if (val !== null && !isNaN(val)) {
+          inputListHTML += `<li><strong>${pollutant.toUpperCase()}:</strong> ${val.toFixed(2)} µg/m³ (approx.)</li>`;
+        }
+      }
+      inputListHTML += "</ul>";
+
+      // Construct full report HTML
+      const reportHTML = `
+        <div class="section"><strong>Date & Time:</strong> ${dateTime}</div>
+        <div class="section">
+          <strong>Maximum AQI:</strong> 
+          <span class="aqi-value ${finalCat.colorClass}">${finalAQI} (${finalCat.name})</span>
+        </div>
+        <div class="section">
+          <strong>Health Implications:</strong>
+          <p>${finalCat.health}</p>
+        </div>
+        <div class="section">
+          <strong>Recommendations:</strong>
+          <p>${finalCat.advice}</p>
+        </div>
+        <hr/>
+        <div class="section">
+          <strong>AQI by Pollutant:</strong>
+          ${pollutantListHTML}
+        </div>
+        <div class="section">
+          <strong>Pollutant Concentrations:</strong>
+          ${inputListHTML}
+        </div>
+      `;
+
+      reportDiv.innerHTML = reportHTML;
+      loadingDiv.style.display = "none";
+
+    } catch (err) {
+      loadingDiv.textContent = "Error loading report.";
+      console.error(err);
+    }
+  }
+
+  loadLatestReport();
+</script>
+</body>
+</html>

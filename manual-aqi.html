@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manual AQI Calculator with Units</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #000;
+    }
+    .container {
+      max-width: 480px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+    input, select, button {
+      width: 100%;
+      margin-top: 5px;
+      padding: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #result {
+      margin-top: 25px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .unit-select {
+      margin-top: 4px;
+    }
+    
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Enter Pollutant Concentrations</h2>
+
+  <!-- Inputs -->
+  <label>PM2.5 (µg/m³ or ppm) <span style="color: red">*</span> <small></small>
+  <input id="pm25" type="number" step="0.1" min="0" required />
+  <select id="pm25-unit" class="unit-select">
+    <option value="ug/m3">µg/m³</option>
+    <option value="ppm">ppm</option>
+  </select>
+</label>
+  <label>PM10 (µg/m³ or ppm)
+    <input id="pm10" type="number" step="0.1" min="0" />
+    <select id="pm10-unit" class="unit-select">
+      <option value="ug/m3">µg/m³</option>
+      <option value="ppm">ppm</option>
+    </select>
+  </label>
+  <label>CO (ppm or mg/m³)
+    <input id="co" type="number" step="0.1" min="0" />
+    <select id="co-unit" class="unit-select">
+      <option value="ppm">ppm</option>
+      <option value="mg/m3">mg/m³</option>
+    </select>
+  </label>
+  <label>O₃ (ppm or µg/m³)
+    <input id="o3" type="number" step="0.001" min="0" />
+    <select id="o3-unit" class="unit-select">
+      <option value="ppm">ppm</option>
+      <option value="ug/m3">µg/m³</option>
+    </select>
+  </label>
+  <label>NO₂ (ppb or µg/m³)
+    <input id="no2" type="number" step="0.1" min="0" />
+    <select id="no2-unit" class="unit-select">
+      <option value="ppb">ppb</option>
+      <option value="ug/m3">µg/m³</option>
+    </select>
+  </label>
+  <label>SO₂ (ppb or µg/m³)
+    <input id="so2" type="number" step="0.1" min="0" />
+    <select id="so2-unit" class="unit-select">
+      <option value="ppb">ppb</option>
+      <option value="ug/m3">µg/m³</option>
+    </select>
+  </label>
+
+  <button onclick="calculateAQI()">Calculate AQI</button>
+  <button onclick="window.location.href='manual-aqi-report.html'">Generate Report</button>
+  <div id="result"></div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKPFn28_lBMVpbtVUaY2aR-ODDlvn3Y0",
+    authDomain: "envirometric-75c46.firebaseapp.com",
+    projectId: "envirometric-75c46",
+    storageBucket: "envirometric-75c46.appspot.com",
+    messagingSenderId: "12103395246",
+    appId: "1:12103395246:web:8bed51fdbc363af25b0a3f",
+    measurementId: "G-SLMC2655JC"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Breakpoints for AQI calculation (example only PM2.5 and PM10, add others if needed)
+  const breakpoints = {
+    pm25: [
+      { CpHi: 12.0, CpLo: 0.0, IHi: 50, ILo: 0 },
+      { CpHi: 35.4, CpLo: 12.1, IHi: 100, ILo: 51 },
+      { CpHi: 55.4, CpLo: 35.5, IHi: 150, ILo: 101 },
+      { CpHi: 150.4, CpLo: 55.5, IHi: 200, ILo: 151 },
+      { CpHi: 250.4, CpLo: 150.5, IHi: 300, ILo: 201 },
+      { CpHi: 350.4, CpLo: 250.5, IHi: 400, ILo: 301 },
+      { CpHi: 500.4, CpLo: 350.5, IHi: 500, ILo: 401 }
+    ],
+    pm10: [
+      { CpHi: 54, CpLo: 0, IHi: 50, ILo: 0 },
+      { CpHi: 154, CpLo: 55, IHi: 100, ILo: 51 },
+      { CpHi: 254, CpLo: 155, IHi: 150, ILo: 101 },
+      { CpHi: 354, CpLo: 255, IHi: 200, ILo: 151 },
+      { CpHi: 424, CpLo: 355, IHi: 300, ILo: 201 },
+      { CpHi: 504, CpLo: 425, IHi: 400, ILo: 301 },
+      { CpHi: 604, CpLo: 505, IHi: 500, ILo: 401 }
+    ],
+    // Add others like co, o3, no2, so2 breakpoints if you want
+  };
+
+  function calcIndividualAQI(Cp, BP_Lo, BP_Hi, I_Lo, I_Hi) {
+    return ((I_Hi - I_Lo) / (BP_Hi - BP_Lo)) * (Cp - BP_Lo) + I_Lo;
+  }
+
+  function getAQI(pollutant, concentration) {
+    if (!breakpoints[pollutant]) return null;
+    for (const bp of breakpoints[pollutant]) {
+      if (concentration >= bp.CpLo && concentration <= bp.CpHi) {
+        return Math.round(calcIndividualAQI(concentration, bp.CpLo, bp.CpHi, bp.ILo, bp.IHi));
+      }
+    }
+    return null;
+  }
+
+  function convertToEPAUnits(pollutant, value, unit) {
+    if (value == null || isNaN(value)) return null;
+    switch (pollutant) {
+      case "pm25":
+      case "pm10":
+        return unit === "ppm" ? value * 1000 : value; // assuming 1 ppm = 1000 ug/m3 approx
+      case "co":
+        return unit === "mg/m3" ? value / 1.145 : value;
+      case "o3":
+        return unit === "ug/m3" ? value / 2000 : value;
+      case "no2":
+      case "so2":
+        return unit === "ug/m3" ? value / 1.88 : value;
+      default:
+        return value;
+    }
+  }
+
+ window.calculateAQI = async function () {
+  const getVal = (id) => parseFloat(document.getElementById(id).value);
+  const getUnit = (id) => document.getElementById(id + '-unit').value;
+
+  const rawValues = {
+    pm25: getVal("pm25"),
+    pm10: getVal("pm10"),
+    co: getVal("co"),
+    o3: getVal("o3"),
+    no2: getVal("no2"),
+    so2: getVal("so2")
+  };
+
+  // Enforce PM2.5 is mandatory
+  if (isNaN(rawValues.pm25)) {
+    document.getElementById("result").textContent = "PM2.5 is required for AQI calculation.";
+    return;
+  }
+
+  // Count how many valid inputs were given
+  const inputCount = Object.values(rawValues).filter(v => !isNaN(v)).length;
+  if (inputCount < 3) {
+    document.getElementById("result").textContent = "Please provide at least 3 pollutant inputs including PM2.5.";
+    return;
+  }
+
+  const data = {
+    pm25: convertToEPAUnits("pm25", rawValues.pm25, getUnit("pm25")),
+    pm10: convertToEPAUnits("pm10", rawValues.pm10, getUnit("pm10")),
+    co: convertToEPAUnits("co", rawValues.co, getUnit("co")),
+    o3: convertToEPAUnits("o3", rawValues.o3, getUnit("o3")),
+    no2: convertToEPAUnits("no2", rawValues.no2, getUnit("no2")),
+    so2: convertToEPAUnits("so2", rawValues.so2, getUnit("so2"))
+  };
+
+  const aqis = {
+    pm25: getAQI("pm25", data.pm25),
+    pm10: getAQI("pm10", data.pm10),
+    co: getAQI("co", data.co),
+    o3: getAQI("o3", data.o3),
+    no2: getAQI("no2", data.no2),
+    so2: getAQI("so2", data.so2)
+  };
+
+  const validAQIs = Object.values(aqis).filter(v => v !== null);
+  if (validAQIs.length === 0) {
+    document.getElementById("result").textContent = "Please enter valid pollutant concentrations.";
+    return;
+  }
+
+  const finalAQI = Math.max(...validAQIs);
+  let category = '';
+  if (finalAQI <= 50) category = "Good";
+  else if (finalAQI <= 100) category = "Moderate";
+  else if (finalAQI <= 150) category = "Unhealthy for Sensitive Groups";
+  else if (finalAQI <= 200) category = "Unhealthy";
+  else if (finalAQI <= 300) category = "Very Unhealthy";
+  else category = "Hazardous";
+
+  document.getElementById("result").innerHTML = `AQI: <strong>${finalAQI}</strong> (${category})`;
+
+  // Save to Firestore
+  try {
+    await addDoc(collection(db, "aqi_results"), {
+      timestamp: new Date(),
+      inputs: data,
+      aqis: aqis,
+      final_aqi: finalAQI,
+      category: category
+    });
+    console.log("✅ AQI data saved to Firestore.");
+  } catch (error) {
+    console.error("❌ Error saving AQI data:", error);
+  }
+};
+</script>
+</body>
+</html>

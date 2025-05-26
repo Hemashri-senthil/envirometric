@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WQI Calculator</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      overflow-y: auto;
+    }
+
+    .wqi-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 350px;
+      text-align: center;
+    }
+
+    .wqi-container input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .wqi-container button {
+      padding: 15px 30px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin: 10px 0;
+      width: 100%;
+      font-weight: bold;
+    }
+
+    .wqi-container button:hover {
+      background-color: #0056b3;
+    }
+
+    .result-container {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .report-btn {
+      background-color: #28a745;
+    }
+
+    .report-btn:hover {
+      background-color: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wqi-container">
+    <h1>Enter Water Quality Data</h1>
+    <form id="wqiForm" onsubmit="return false;">
+      <input type="number" step="0.01" id="ph" placeholder="pH Level (6.5 - 8.5)" required />
+      <input type="number" step="0.01" id="do" placeholder="Dissolved Oxygen (mg/L)" required />
+      <input type="number" step="0.01" id="bod" placeholder="Biological Oxygen Demand (mg/L)" required />
+      <input type="number" step="0.01" id="nitrate" placeholder="Nitrate (mg/L)" required />
+      <input type="number" step="0.01" id="temperature" placeholder="Temperature (°C)" />
+      <button type="button" onclick="calculateWQI()">Calculate WQI</button>
+    </form>
+    <div class="result-container" id="wqiResult"></div>
+    <button type="button" class="report-btn" onclick="goToReport()" style="display:none;">Generate Report</button>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbKPFn28_lBMVpbtVUaY2aR-ODDlvn3Y0",
+      authDomain: "envirometric-75c46.firebaseapp.com",
+      projectId: "envirometric-75c46",
+      storageBucket: "envirometric-75c46.appspot.com",
+      messagingSenderId: "12103395246",
+      appId: "1:12103395246:web:8bed51fdbc363af25b0a3f",
+      measurementId: "G-SLMC2655JC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const analytics = getAnalytics(app);
+
+    let lastWQI = null;
+    let lastStatus = null;
+
+    window.calculateWQI = async function () {
+      const ph = parseFloat(document.getElementById('ph').value);
+      const doLevel = parseFloat(document.getElementById('do').value);
+      const bod = parseFloat(document.getElementById('bod').value);
+      const nitrate = parseFloat(document.getElementById('nitrate').value);
+      const temperature = parseFloat(document.getElementById('temperature').value);
+
+      if ([ph, doLevel, bod, nitrate].some(val => isNaN(val))) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      const phIndex = 100 - Math.abs(7 - ph) * 10;
+      const doIndex = doLevel * 10;
+      const bodIndex = 100 - bod * 5;
+      const nitrateIndex = 100 - nitrate * 2;
+
+      const wqi = Math.max(0, Math.min(100, (phIndex + doIndex + bodIndex + nitrateIndex) / 4));
+      let status = '';
+
+      if (wqi >= 90) status = "Excellent";
+      else if (wqi >= 70) status = "Good";
+      else if (wqi >= 50) status = "Medium";
+      else if (wqi >= 25) status = "Bad";
+      else status = "Very Bad";
+
+      lastWQI = wqi.toFixed(2);
+      lastStatus = status;
+
+      document.getElementById('wqiResult').innerHTML = `
+        WQI: ${lastWQI}<br>Status: ${lastStatus}
+      `;
+
+      document.querySelector('.report-btn').style.display = 'block';
+
+      try {
+        await addDoc(collection(db, "wqi_results"), {
+          ph,
+          do: doLevel,
+          bod,
+          nitrate,
+          temperature: isNaN(temperature) ? null : temperature,
+          wqi: parseFloat(lastWQI),
+          status: lastStatus,
+          timestamp: serverTimestamp()
+        });
+        console.log("WQI data added to Firestore");
+      } catch (error) {
+        console.error("Error writing document: ", error);
+        alert("Failed to save data to Firebase.");
+      }
+    };
+
+    window.goToReport = function () {
+      if (!lastWQI || !lastStatus) {
+        alert("Please calculate WQI before generating report.");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('wqi', lastWQI);
+      params.set('status', lastStatus);
+      params.set('ph', document.getElementById('ph').value);
+      params.set('do', document.getElementById('do').value);
+      params.set('bod', document.getElementById('bod').value);
+      params.set('nitrate', document.getElementById('nitrate').value);
+      const temperature = document.getElementById('temperature').value;
+      if (temperature) params.set('temperature', temperature);
+
+      window.location.href = 'wqi-report.html?' + params.toString();
+    };
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculate AQI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('img.jpeg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: white;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    .aqi-container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #ffffff;
+      max-width: 500px;
+      margin: 50px auto 30px;
+    }
+
+    .aqi-container h1 {
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+
+    .aqi-container button {
+      padding: 15px 30px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4db8ff;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      margin: 10px;
+      transition: background-color 0.3s;
+    }
+
+    .aqi-container button:hover {
+      background-color: #66ccff;
+    }
+
+    .info-section {
+      background: white;
+      color: #000;
+      padding: 40px 20px;
+    }
+
+    .content-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .content-row.reverse {
+      flex-direction: row-reverse;
+    }
+
+    .content-text {
+      flex: 1 1 60%;
+    }
+
+    .content-image {
+      flex: 1 1 35%;
+    }
+
+    .content-image img {
+      width: 85%;
+      border-radius: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .content-row,
+      .content-row.reverse {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .content-image img {
+        width: 100%;
+      }
+    }
+
+    .logout-link {
+      text-align: center;
+      margin: 30px 0 50px 0;
+      font-size: 1rem;
+    }
+
+    .logout-link a {
+      color: #b3d9ff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .logout-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+<body>
+
+  <div class="aqi-container">
+    <h1>Choose Your Option</h1>
+    <button onclick="location.href='location-aqi.html'">Enter Location and Calculate AQI</button>
+    <button onclick="location.href='manual-aqi.html'">Enter Manual Data to Calculate AQI</button>
+    <button onclick="location.href='map-aqi.html'">View AQI on Map</button> <!-- New button -->
+  </div>
+
+  <div class="info-section">
+    <div class="content-row">
+      <div class="content-text">
+        <h2>What is AQI?</h2>
+        <p>
+          The Air Quality Index (AQI) helps indicate how clean or polluted the air is, and what associated health effects might be a concern. It ranges from 0 (Good) to 500 (Hazardous). AQI simplifies multiple air pollution measurements into a single number and category. It enables the public to quickly understand current air quality and take precautions if necessary. AQI considers pollutants like PM2.5, PM10, CO, NO₂, SO₂, and O₃. Monitoring AQI helps reduce health risks and plan safer outdoor activities.
+        </p>
+      </div>
+      <div class="content-image">
+        <img src="aqi1.jpg" alt="AQI Info" />
+      </div>
+    </div>
+
+    <div class="content-row reverse">
+      <div class="content-text">
+        <h2>Sources of Pollution</h2>
+        <p>
+          Sources of air pollution include a wide range of human and natural activities. Major contributors are vehicle emissions, industrial factories, coal-fired power plants, construction activities, and the burning of fossil fuels. Agricultural practices like crop burning and the use of pesticides also release harmful pollutants. Wildfires and dust storms are natural sources that significantly degrade air quality, especially in dry regions. These sources emit dangerous pollutants such as PM2.5, nitrogen dioxide (NO₂), sulfur dioxide (SO₂), and volatile organic compounds (VOCs).
+        </p>
+      </div>
+      <div class="content-image">
+        <img src="aqi2.jpg" alt="Pollution Sources" />
+      </div>
+    </div>
+
+    <div class="content-row">
+      <div class="content-text">
+        <h2>Common Pollutants</h2>
+        <ul>
+          <li>PM2.5 – Fine particulate matter</li>
+          <li>PM10 – Dust and pollen</li>
+          <li>Ozone (O₃)</li>
+          <li>Carbon Monoxide (CO)</li>
+          <li>Nitrogen Dioxide (NO₂)</li>
+          <li>Sulfur Dioxide (SO₂)</li>
+        </ul>
+      </div>
+      <div class="content-image">
+        <img src="aqi3.png" alt="AQI Info" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout link at bottom -->
+  <div class="logout-link">
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbKPFn28_lBMVpbtVUaY2aR-ODDlvn3Y0",
+      authDomain: "envirometric-75c46.firebaseapp.com",
+      projectId: "envirometric-75c46",
+      storageBucket: "envirometric-75c46.appspot.com",
+      messagingSenderId: "12103395246",
+      appId: "1:12103395246:web:8bed51fdbc363af25b0a3f",
+      measurementId: "G-SLMC2655JC"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        alert("Logged out successfully!");
+        window.location.href = "login.html";
+      }).catch((error) => {
+        console.error("Logout failed:", error);
+        alert("Logout failed: " + error.message);
+      });
+    }
+  </script>
+
+</body>
+</html>
